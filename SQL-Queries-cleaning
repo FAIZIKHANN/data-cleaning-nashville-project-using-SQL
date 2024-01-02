@@ -1,0 +1,153 @@
+  /*
+
+Cleaning Data in SQL Queries
+
+*/
+
+
+Select *
+From nashvillehousing 
+
+--------------------------------------------------------------------------------------------------------------------------
+
+-- Standardize Date Format
+
+update nashvillehousing
+set saledate = to_char(to_date(saledate,'MM-DD-YYYY'),'YYYY-MM-DD') 
+
+ --------------------------------------------------------------------------------------------------------------------------
+
+-- Populate Property Address data
+
+
+Select *
+From NashvilleHousing
+---Where PropertyAddress is null
+order by ParcelID
+
+
+
+
+SELECT 
+  nx.parcelid, 
+  nx.propertyaddress, 
+  ny.parcelid, 
+  ny.propertyaddress,
+  coalesce(nx.propertyaddress, ny.propertyaddress) 
+FROM 
+  Nashvillehousing nx 
+  join Nashvillehousing ny on nx.parcelid = ny.parcelid 
+  and nx.uniqueid <> ny.uniqueid 
+where 
+  nx.propertyaddress is null
+  
+  
+  
+
+update 
+  nashvillehousing
+set propertyaddress = coalesce(nx.propertyaddress,ny.propertyaddress)
+FROM Nashvillehousing nx join 
+Nashvillehousing ny on nx.parcelid = ny.parcelid 
+and nx.uniqueid <> ny.uniqueid 
+where nx.propertyaddress is null and nashvillehousing.propertyaddress is null
+
+
+--------------------------------------------------------------------------------------------------------------------------
+
+-- Breaking out Address into Individual Columns (Address, City, State)
+
+select propertyaddress, split_part(propertyaddress,',',1)
+from nashvillehousing 
+
+alter table nashvillehousing
+add column PropertySplitAddress varchar(255) null;
+
+alter table nashvillehousing
+add column PropertySplitcity varchar(255) null;
+
+update nashvillehousing 
+set propertysplitcity = split_part(propertyaddress,',',2)
+
+
+
+select owneraddress, split_part(owneraddress,',',1)
+from nashvillehousing 
+
+alter table nashvillehousing
+add column ownerSplitAddress varchar(255) null;
+
+alter table nashvillehousing
+add column ownerSplitcity varchar(255) null;
+
+alter table nashvillehousing
+add column ownerSplitstate varchar(255) null;
+
+update nashvillehousing 
+set ownersplitaddress = split_part(owneraddress,',',1)
+
+
+update nashvillehousing 
+set ownersplitcity = split_part(owneraddress,',',2
+								
+update nashvillehousing 
+set ownersplitstate = split_part(owneraddress,',',3)								
+
+
+
+
+
+
+
+
+  --------------------------------------------------------------------------------------------------------------------------
+
+
+-- Change Y and N to Yes and No in "Sold as Vacant" field
+
+select soldasvacant, count(soldasvacant)
+from nashvillehousing 
+group by soldasvacant 
+
+
+
+select case 
+           when soldsvacant = 'Y' THEN 'Yes'
+		   when soldsvacant = 'N'THEN 'No'
+from nashvilehousing 
+
+
+
+update nashvillehousing
+set soldasvacant = case 
+           when soldasvacant = 'Y' THEN 'Yes'
+		   when soldasvacant = 'N'THEN 'No'
+		   else soldasvacant end
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Remove Duplicates
+
+
+delete from nashvillehousing 
+where uniqueid in
+(select uniqueid from (select *, row_number() over (partition by parcelid,propertyaddress,saledate,legalreference,saleprice order by uniqueid) as row_num
+from nashvillehousing) x 
+where x.row_num > 1);
+
+
+
+---------------------------------------------------------------------------------------------------------
+
+-- Delete Unused Columns
+
+
+
+Select *
+From NashvilleHousing;
+
+
+ALTER TABLE NashvilleHousing
+DROP COLUMN OwnerAddress , DROP COLUMN PropertyAddress , DROP COLUMN TaxDistrict;
